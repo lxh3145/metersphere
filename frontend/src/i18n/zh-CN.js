@@ -1330,6 +1330,7 @@ export default {
     }
   },
   api_report: {
+    fail_detail: "失败接口",
     title: "报告",
     request: "请求",
     request_body: "请求内容",

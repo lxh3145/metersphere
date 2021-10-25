@@ -67,13 +67,15 @@ function exception(error, result, url) {
     return;
   }
   result.loading = false;
-  window.console.error(error.response || error.message);
-  if (error.response && error.response.data) {
-    if (error.response.headers["authentication-status"] !== "invalid") {
-      Message.error({message: error.response.data.message || error.response.data, showClose: true});
+  if(window.location.pathname != '/mailReport'){
+    window.console.error(error.response || error.message);
+    if (error.response && error.response.data) {
+      if (error.response.headers["authentication-status"] !== "invalid") {
+        Message.error({message: error.response.data.message || error.response.data, showClose: true});
+      }
+    } else {
+      Message.error({message: error.message, showClose: true});
     }
-  } else {
-    Message.error({message: error.message, showClose: true});
   }
 }
 

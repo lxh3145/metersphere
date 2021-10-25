@@ -35,6 +35,17 @@ public class APIScenarioReportController {
         return apiReportService.get(reportId);
     }
 
+
+    @GetMapping("/getWrongReportList/{reportId}")
+    public List<APIScenarioReportResult> getWrongReportList(@PathVariable String reportId) {
+        return apiReportService.getWrongReportList(reportId);
+    }
+
+    @GetMapping("/getAllReportList/{reportId}")
+    public List<APIScenarioReportResult> getAllReportList(@PathVariable String reportId) {
+        return apiReportService.getAllReportList(reportId);
+    }
+
     @PostMapping("/list/{goPage}/{pageSize}")
     public Pager<List<APIScenarioReportResult>> list(@PathVariable int goPage, @PathVariable int pageSize, @RequestBody QueryAPIReportRequest request) {
         Page<Object> page = PageHelper.startPage(goPage, pageSize, true);

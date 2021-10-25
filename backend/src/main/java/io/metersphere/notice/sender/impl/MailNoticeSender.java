@@ -38,7 +38,7 @@ public class MailNoticeSender extends AbstractNoticeSender {
         }
         LogUtil.debug("发件人地址" + javaMailSender.getUsername());
         LogUtil.debug("helper" + helper);
-        helper.setSubject("MeterSphere " + noticeModel.getSubject());
+        helper.setSubject("" + noticeModel.getSubject());
         List<String> userIds = noticeModel.getReceivers().stream()
                 .map(Receiver::getUserId)
                 .distinct()

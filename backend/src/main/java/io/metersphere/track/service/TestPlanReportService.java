@@ -5,12 +5,11 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.metersphere.api.cache.TestPlanExecuteInfo;
 import io.metersphere.api.cache.TestPlanReportExecuteCatch;
-import io.metersphere.api.dto.automation.ApiScenarioDTO;
-import io.metersphere.api.dto.automation.TestPlanFailureApiDTO;
-import io.metersphere.api.dto.automation.TestPlanFailureScenarioDTO;
-import io.metersphere.api.dto.automation.TestPlanScenarioRequest;
+import io.metersphere.api.dto.automation.*;
 import io.metersphere.api.dto.definition.ApiTestCaseRequest;
 import io.metersphere.api.dto.definition.TestPlanApiCaseDTO;
+import io.metersphere.api.service.ApiAutomationService;
+import io.metersphere.api.service.ApiScenarioReportService;
 import io.metersphere.base.domain.*;
 import io.metersphere.base.mapper.*;
 import io.metersphere.base.mapper.ext.*;
@@ -42,6 +41,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -86,6 +87,15 @@ public class TestPlanReportService {
     @Lazy
     @Resource
     TestPlanReportContentMapper testPlanReportContentMapper;
+
+    @Resource
+    @Lazy
+    TestPlanScenarioCaseService testPlanScenarioCaseService;
+    @Resource
+    ApiScenarioReportService apiScenarioReportService;
+    @Resource
+    ProjectMapper projectMapper;
+
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
@@ -756,16 +766,21 @@ public class TestPlanReportService {
     public TestPlanReport update(TestPlanReport report) {
         if (!report.getIsApiCaseExecuting() && !report.getIsPerformanceExecuting() && !report.getIsScenarioExecuting()) {
             try {
-                //更新TestPlan状态为完成
-                TestPlanWithBLOBs testPlan = testPlanMapper.selectByPrimaryKey(report.getTestPlanId());
-                if (testPlan != null) {
-//                    testPlan.setStatus(TestPlanStatus.Completed.name());
-                    testPlanMapper.updateByPrimaryKeySelective(testPlan);
-                }
-                if (testPlan != null && StringUtils.equalsAny(report.getTriggerMode(), ReportTriggerMode.API.name(), ReportTriggerMode.SCHEDULE.name())) {
-                    //发送通知
-                    sendMessage(report, testPlan.getProjectId());
-                }
+                //如果执行完最后一个场景，更新TestPlan状态为完成，并发送邮件
+//                if (ApiAutomationService.isLastScenarioSpeck) {
+                    //更新TestPlan状态为完成
+                    TestPlanWithBLOBs testPlan = testPlanMapper.selectByPrimaryKey(report.getTestPlanId());
+                    if (testPlan != null) {
+                        testPlan.setStatus(TestPlanStatus.Completed.name());
+                        testPlanMapper.updateByPrimaryKeySelective(testPlan);
+                        ApiAutomationService.isLastScenarioSpeck=false;
+                    }
+                    if (testPlan != null && StringUtils.equalsAny(report.getTriggerMode(), ReportTriggerMode.API.name(), ReportTriggerMode.SCHEDULE.name())) {
+                        //发送通知
+                        sendMessage(report, testPlan.getProjectId());
+//                        ApiAutomationService.isLastScenarioSpeck=false;
+                    }
+//                }
             } catch (Exception e) {
 
             }
@@ -785,17 +800,18 @@ public class TestPlanReportService {
         assert noticeSendService != null;
         BaseSystemConfigDTO baseSystemConfigDTO = systemParameterService.getBaseInfo();
         String url = baseSystemConfigDTO.getUrl() + "/#/track/testPlan/reportList";
+        String urlNew = baseSystemConfigDTO.getUrl()+"";
         String successContext = "";
         String failedContext = "";
         String subject = "";
         String event = "";
         if (StringUtils.equals(testPlanReport.getTriggerMode(), ReportTriggerMode.API.name())) {
-            successContext = "测试计划jenkins任务通知:'" + testPlan.getName() + "'执行成功" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + url;
-            failedContext = "测试计划jenkins任务通知:'" + testPlan.getName() + "'执行失败" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + url;
+            successContext = "测试计划jenkins任务通知:'" + testPlan.getName() + "'执行成功" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + urlNew;
+            failedContext = "测试计划jenkins任务通知:'" + testPlan.getName() + "'执行失败" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + urlNew;
             subject = Translator.get("task_notification_jenkins");
         } else {
-            successContext = "测试计划定时任务通知:'" + testPlan.getName() + "'执行成功" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + url;
-            failedContext = "测试计划定时任务通知:'" + testPlan.getName() + "'执行失败" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + url;
+            successContext = "测试计划定时任务通知:'" + testPlan.getName() + "'执行成功" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + urlNew;
+            failedContext = "测试计划定时任务通知:'" + testPlan.getName() + "'执行失败" + "\n" + "请点击下面链接进入测试报告页面" + "\n" + urlNew;
             subject = Translator.get("task_notification");
         }
 
@@ -805,10 +821,45 @@ public class TestPlanReportService {
         } else {
             event = NoticeConstants.Event.EXECUTE_SUCCESSFUL;
         }
+
+        //拿到当前时间
+        Date date = new Date();
+        DateFormat format = new SimpleDateFormat("yy/MM/dd HH:mm");
+        String creatTime = format.format(date);
+        //拿到测试报告中错误场景数
+        ArrayList<APIScenarioReportResult> apiScenarioReportResults= (ArrayList<APIScenarioReportResult>) apiScenarioReportService.getWrongReportList(testPlanReport.getId());
+        int failureCount =apiScenarioReportResults.size();
+        String sceneName ="";
+        //用测试计划id拿到所有的场景案例id组
+        TestPlanScenarioRequest testPlanScenarioRequest = new TestPlanScenarioRequest();
+        testPlanScenarioRequest.setModuleIds(null);
+        testPlanScenarioRequest.setPlanId(testPlanReport.getTestPlanId());
+        testPlanScenarioRequest.setSelectAll(false);
+        testPlanScenarioRequest.setUnSelectIds(null);
+        List<ApiScenarioDTO> apiScenarioDTOS=testPlanScenarioCaseService.list(testPlanScenarioRequest);
+        int allCount =apiScenarioDTOS.size();
+        for (APIScenarioReportResult apiScenarioReportResult : apiScenarioReportResults) {
+//            sceneName.concat("；"+apiScenarioReportResult.getScenarioName());
+            sceneName=sceneName+apiScenarioReportResult.getScenarioName()+"；";
+        }
+
         Map paramMap = new HashMap();
         paramMap.put("type", "testPlan");
-        paramMap.put("url", url);
+        paramMap.put("url", urlNew);
         paramMap.put("projectId", projectId);
+        paramMap.put("testName", testPlan.getName());
+        paramMap.put("creatTime", creatTime);
+        paramMap.put("failureCount", failureCount);
+        //失败场景名称
+        paramMap.put("sceneName",sceneName);
+        paramMap.put("allCount",allCount);
+
+        //查询项目名称
+        String projectName = projectMapper.selectByPrimaryKey(testPlan.getProjectId()).getName();
+
+        //设置邮件标题
+        subject = "自动化测试报告-"+projectName;
+
         paramMap.putAll(new BeanMap(testPlanReport));
 
         String successfulMailTemplate = "";
@@ -833,6 +884,13 @@ public class TestPlanReportService {
                 .build();
         noticeSendService.send(testPlanReport.getTriggerMode(), NoticeConstants.TaskType.TEST_PLAN_TASK, noticeModel);
     }
+
+
+    //根据计划id并拿到测试计划报告最新的一条id
+    public TestPlanReport getTestPlanReportid(String planId) {
+        return testPlanReportMapper.selectByPrimaryKey(planId);
+    }
+
 
     public TestPlanReport getTestPlanReport(String planId) {
         return testPlanReportMapper.selectByPrimaryKey(planId);
@@ -1057,7 +1115,7 @@ public class TestPlanReportService {
             //如果间隔超过5分钟没有案例执行完成，则把执行结果变成false
             long lastCountTime = executeInfo.getLastFinishedNumCountTime();
             long nowTime = System.currentTimeMillis();
-            if (nowTime - lastCountTime > 300000) {
+            if (nowTime - lastCountTime > 3600000) {
                 TestPlanReportExecuteCatch.finishAllTask(planReportId);
             }
         }

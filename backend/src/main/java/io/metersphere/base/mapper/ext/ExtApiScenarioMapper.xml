@@ -310,8 +310,8 @@
     </select>
 
     <select id="selectByIds" resultType="io.metersphere.base.domain.ApiScenarioWithBLOBs">
-        select * from api_scenario where id in (${ids}) ORDER BY FIND_IN_SET(id,${oderId})
-    </select>
+--         select * from api_scenario where id in (${ids}) ORDER BY FIND_IN_SET(id,${oderId})
+        select * from api_scenario where id in (${ids}) ORDER BY custom_num    </select>
 
     <select id="selectReference" resultType="io.metersphere.base.domain.ApiScenario">
         select * from api_scenario

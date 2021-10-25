@@ -12,7 +12,7 @@ module.exports = {
     proxy: {
       //1.8需求：增加分享功能，不登陆即可看到文档页面。所以代理设置增加了(?!/document)文档页面的相关信息
       // ['^(?!/login)']: {
-      ['^((?!/login)(?!/document))']: {
+      ['^((?!/login)(?!/document)(?!/mailReport))']: {
         target: 'http://localhost:8081',
         ws: true,
       },
@@ -33,6 +33,11 @@ module.exports = {
       entry: "src/document/document.js",
       template: "src/document/document.html",
       filename: "document.html",
+    },
+    mailReport: {
+      entry: "src/mailReport/mailReport.js",
+      template: "src/mailReport/mailReport.html",
+      filename: "mailReport.html"
     },
     sharePlanReport: {
       entry: "src/template/report/plan/share/share-plan-report.js",

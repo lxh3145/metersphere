@@ -102,6 +102,15 @@
     from test_plan_report
     where id = #{id,jdbcType=VARCHAR}
   </select>
+
+  <select id="selectTestPlanReportId" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from test_plan_report
+    where id = #{id,jdbcType=VARCHAR}
+    order by create_time desc LIMIT 1
+  </select>
+
   <delete id="deleteByPrimaryKey" parameterType="java.lang.String">
     delete from test_plan_report
     where id = #{id,jdbcType=VARCHAR}

@@ -133,6 +133,8 @@ public class ApiAutomationService {
     @Resource
     private NodeKafkaService nodeKafkaService;
 
+    public static Boolean isLastScenarioSpeck =false;
+
     public ApiScenarioWithBLOBs getDto(String id) {
         return apiScenarioMapper.selectByPrimaryKey(id);
     }
@@ -1110,6 +1112,15 @@ public class ApiAutomationService {
                 HashTreeUtil hashTreeUtil = new HashTreeUtil();
                 for (String key : executeQueue.keySet()) {
                     reportIds.add(key);
+
+                    //判断测试计划串行是否执行到最后一个案例
+                    if(reportIds.size()==(executeQueue.size())){
+                        ApiAutomationService.isLastScenarioSpeck=true;
+                    }
+                    else {
+                        ApiAutomationService.isLastScenarioSpeck=false;
+                    }
+
                     APIScenarioReportResult report = executeQueue.get(key).getReport();
                     if (StringUtils.isNotEmpty(serialReportId)) {
                         report.setExecuteType(ExecuteType.Marge.name());

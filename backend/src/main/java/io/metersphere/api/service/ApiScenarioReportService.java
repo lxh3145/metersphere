@@ -11,9 +11,7 @@ import io.metersphere.api.dto.APIReportBatchRequest;
 import io.metersphere.api.dto.DeleteAPIReportRequest;
 import io.metersphere.api.dto.JvmInfoDTO;
 import io.metersphere.api.dto.QueryAPIReportRequest;
-import io.metersphere.api.dto.automation.APIScenarioReportResult;
-import io.metersphere.api.dto.automation.ExecuteType;
-import io.metersphere.api.dto.automation.ScenarioStatus;
+import io.metersphere.api.dto.automation.*;
 import io.metersphere.api.dto.datacount.ApiDataCountResult;
 import io.metersphere.api.jmeter.MessageCache;
 import io.metersphere.api.jmeter.ReportCounter;
@@ -39,6 +37,7 @@ import io.metersphere.log.vo.api.ModuleReference;
 import io.metersphere.notice.sender.NoticeModel;
 import io.metersphere.notice.service.NoticeSendService;
 import io.metersphere.track.service.TestPlanReportService;
+import io.metersphere.track.service.TestPlanScenarioCaseService;
 import org.apache.commons.beanutils.BeanMap;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -47,6 +46,7 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,6 +79,13 @@ public class ApiScenarioReportService {
     SqlSessionFactory sqlSessionFactory;
     @Resource
     private NoticeSendService noticeSendService;
+    @Resource
+    @Lazy
+    TestPlanReportService testPlanReportService;
+    @Resource
+    @Lazy
+    TestPlanScenarioCaseService testPlanScenarioCaseService;
+
 
     public ApiScenarioReport complete(TestResult result, String runMode) {
         // 更新场景
@@ -102,6 +109,71 @@ public class ApiScenarioReportService {
             reportResult.setContent(new String(detail.getContent(), StandardCharsets.UTF_8));
         }
         return reportResult;
+    }
+
+    /**
+     * @Description:  获取测试计划中所有错误案例的内容
+     * @Param: [reportId] 测试计划id
+     * @return: java.util.List<io.metersphere.api.dto.automation.APIScenarioReportResult>
+     * @Author: liuxiaohui
+     * @Date: 2021/7/1
+     **/
+    public List<APIScenarioReportResult> getWrongReportList(String reportId) {
+        ArrayList<APIScenarioReportResult> apiScenarioReportResults = new ArrayList<>();
+        //用测试计划报告id拿到测试计划id
+        String testPlanId = testPlanReportService.getMetric(reportId).getTestPlanId();
+        //用测试计划id拿到错误的场景案例id组
+        TestPlanScenarioRequest testPlanScenarioRequest = new TestPlanScenarioRequest();
+        testPlanScenarioRequest.setModuleIds(null);
+        testPlanScenarioRequest.setPlanId(testPlanId);
+        testPlanScenarioRequest.setSelectAll(false);
+        testPlanScenarioRequest.setStatus("Fail");
+        testPlanScenarioRequest.setUnSelectIds(null);
+        List<ApiScenarioDTO> apiScenarioDTOS=testPlanScenarioCaseService.list(testPlanScenarioRequest);
+        //用场景案例组id遍历拿到场景案例报告数据组
+        APIScenarioReportResult apiScenarioReportResult =new APIScenarioReportResult();
+        if(apiScenarioDTOS.size()>0){
+            for (ApiScenarioDTO apiScenarioDTO : apiScenarioDTOS) {
+                apiScenarioReportResult=this.get(apiScenarioDTO.getReportId());
+                apiScenarioReportResults.add(apiScenarioReportResult);
+            }
+        }
+        else {
+            LogUtil.error("错误场景报告组为空");
+        }
+        return apiScenarioReportResults;
+    }
+
+    /***
+     * @Description:  用报告id拿到测试计划所有案例内容
+     * @Param: [reportId]
+     * @return: java.util.List<io.metersphere.api.dto.automation.APIScenarioReportResult>
+     * @Author: liuxiaohui
+     * @Date: 2021/8/13
+     **/
+    public List<APIScenarioReportResult> getAllReportList(String reportId) {
+        ArrayList<APIScenarioReportResult> apiScenarioReportResults = new ArrayList<>();
+        //用测试计划报告id拿到测试计划id
+        String testPlanId = testPlanReportService.getMetric(reportId).getTestPlanId();
+        //用测试计划id拿到错误的场景案例id组
+        TestPlanScenarioRequest testPlanScenarioRequest = new TestPlanScenarioRequest();
+        testPlanScenarioRequest.setModuleIds(null);
+        testPlanScenarioRequest.setPlanId(testPlanId);
+        testPlanScenarioRequest.setSelectAll(true);
+        testPlanScenarioRequest.setUnSelectIds(null);
+        List<ApiScenarioDTO> apiScenarioDTOS=testPlanScenarioCaseService.list(testPlanScenarioRequest);
+        //用场景案例组id遍历拿到场景案例报告数据组
+        APIScenarioReportResult apiScenarioReportResult =new APIScenarioReportResult();
+        if(apiScenarioDTOS.size()>0){
+            for (ApiScenarioDTO apiScenarioDTO : apiScenarioDTOS) {
+                apiScenarioReportResult=this.get(apiScenarioDTO.getReportId());
+                apiScenarioReportResults.add(apiScenarioReportResult);
+            }
+        }
+        else {
+            LogUtil.error("错误场景报告组为空");
+        }
+        return apiScenarioReportResults;
     }
 
     public List<APIScenarioReportResult> list(QueryAPIReportRequest request) {

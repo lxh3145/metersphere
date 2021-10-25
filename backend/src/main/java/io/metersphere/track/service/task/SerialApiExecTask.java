@@ -39,9 +39,10 @@ public class SerialApiExecTask<T> implements Callable<T> {
                 jMeterService.runLocal(runModeDataDTO.getApiCaseId(), runModeDataDTO.getHashTree(), runModeDataDTO.getReport() != null ? runModeDataDTO.getReport().getTriggerMode() : null, runMode);
             }
             // 轮询查看报告状态，最多200次，防止死循环
+            //追加为1200次，因为本地化需求单场景可能跑1个小时
             ApiDefinitionExecResult report = null;
             int index = 1;
-            while (index < 200) {
+            while (index < 1200) {
                 Thread.sleep(3000);
                 index++;
                 report = mapper.selectByPrimaryKey(runModeDataDTO.getApiCaseId());
@@ -50,7 +51,7 @@ public class SerialApiExecTask<T> implements Callable<T> {
                 }
             }
             // 执行失败了，恢复报告状态
-            if (index == 200 && report != null && report.getStatus().equals(APITestStatus.Running.name())) {
+            if (index == 1200 && report != null && report.getStatus().equals(APITestStatus.Running.name())) {
                 report.setStatus(APITestStatus.Error.name());
                 mapper.updateByPrimaryKey(report);
             }

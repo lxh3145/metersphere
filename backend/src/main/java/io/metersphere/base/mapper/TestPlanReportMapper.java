@@ -20,6 +20,8 @@ public interface TestPlanReportMapper {
 
     TestPlanReport selectByPrimaryKey(String id);
 
+    TestPlanReport selectTestPlanReportId(String id);
+
     int updateByExampleSelective(@Param("record") TestPlanReport record, @Param("example") TestPlanReportExample example);
 
     int updateByExample(@Param("record") TestPlanReport record, @Param("example") TestPlanReportExample example);

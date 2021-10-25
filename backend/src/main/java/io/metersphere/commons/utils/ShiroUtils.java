@@ -69,6 +69,15 @@ public class ShiroUtils {
         filterChainDefinitionMap.put("/mock/**", "anon");
         filterChainDefinitionMap.put("/ws/**", "anon");
 
+        //for testReport
+        filterChainDefinitionMap.put("/api/scenario/report/get/**", "anon");
+        filterChainDefinitionMap.put("/project/listAll", "anon");
+        filterChainDefinitionMap.put("/api/scenario/report/getWrongReportList/**", "anon");
+        filterChainDefinitionMap.put("/api/scenario/report/getAllReportList/**", "anon");
+        filterChainDefinitionMap.put("/mailReport/**", "anon");
+        filterChainDefinitionMap.put("/static/**", "anon");
+
+
     }
 
     public static void ignoreCsrfFilter(Map<String, String> filterChainDefinitionMap) {
@@ -77,6 +86,8 @@ public class ShiroUtils {
         filterChainDefinitionMap.put("/test/case/file/preview/**", "apikey, authc"); // 预览测试用例附件 不用校验 csrf
         filterChainDefinitionMap.put("/mock", "apikey, authc"); // 跳转到 /mock接口 不用校验 csrf
         filterChainDefinitionMap.put("/resource/md/get/**", "apikey, authc");
+        filterChainDefinitionMap.put("/mailReport", "apikey, authc"); //跳转到邮件接口不用校验csrf
+
     }
 
     public static Cookie getSessionIdCookie(){

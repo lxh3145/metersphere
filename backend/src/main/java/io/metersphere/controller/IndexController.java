@@ -32,6 +32,13 @@ public class IndexController {
         return "document.html";
     }
 
+
+    //邮件路径免登录
+    @GetMapping(value = "/mailReport")
+    public String mailReport() {
+        return "mailReport.html";
+    }
+
     @GetMapping(value = "/sharePlanReport")
     public String shareRedirect() {
         return  "share-plan-report.html";

@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="true">
 	<property resource="application.properties"/>
-	<property file="/opt/metersphere/conf/metersphere.properties"/>
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-		<encoder>
+	<!--	prod-->
+<!--	<property file="/opt/metersphere/conf/metersphere.properties"/>-->
+	<!--	dev-->
+		<property file="E:\idea_project\metersphere1.12\backend\src\main\resources\metersphere.properties"/>
+	<!--	<property file="backend/src/main/resources/metersphere.properties"/>-->
+	<!--	<property file="resource:metersphere.properties"/>-->	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+	<encoder>
 			<pattern>%d %5p %40.40c:%4L - %m%n</pattern>
 		</encoder>
 	</appender>

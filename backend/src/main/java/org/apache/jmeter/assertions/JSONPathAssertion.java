@@ -147,10 +147,12 @@ public class JSONPathAssertion extends AbstractTestElement implements Serializab
         } else {
             Object[] var2 = value.toArray();
             int var3 = var2.length;
-
             for (int var4 = 0; var4 < var3; ++var4) {
                 Object subj = var2[var4];
-                if (subj == null && this.isExpectNull() || this.isEquals(subj)) {
+                if(getOption().equals("NOT_CONTAINS") && !this.isEquals(subj)){
+                        return false;
+                }
+                else if (subj == null && this.isExpectNull() || this.isEquals(subj)) {
                     return true;
                 }
             }

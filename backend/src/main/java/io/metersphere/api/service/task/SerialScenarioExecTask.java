@@ -39,9 +39,9 @@ public class SerialScenarioExecTask<T> implements Callable<T> {
                 jMeterService.runLocal(runModeDataDTO.getReport().getId(), runModeDataDTO.getHashTree(), TriggerMode.BATCH.name().equals(request.getTriggerMode()) ? TriggerMode.BATCH.name() : request.getReportId(), request.getRunMode());
             }
             // 轮询查看报告状态，最多200次，防止死循环
-            //追加为1200次，因为本地化需求单场景可能跑1个小时
+            //追加为2400次，因为本地化需求单场景可能跑2个小时
             int index = 1;
-            while (index < 1200) {
+            while (index < 2400) {
                 Thread.sleep(3000);
                 index++;
                 report = apiScenarioReportMapper.selectByPrimaryKey(runModeDataDTO.getReport().getId());
@@ -50,7 +50,7 @@ public class SerialScenarioExecTask<T> implements Callable<T> {
                 }
             }
             // 执行失败了，恢复报告状态
-            if (index == 1200 && report != null && report.getStatus().equals(APITestStatus.Running.name())) {
+            if (index == 2400 && report != null && report.getStatus().equals(APITestStatus.Running.name())) {
                 report.setStatus(APITestStatus.Error.name());
                 apiScenarioReportMapper.updateByPrimaryKey(report);
             }
